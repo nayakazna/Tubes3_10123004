@@ -17,7 +17,7 @@ def main():
     
     # Set application properties
     app.setApplicationName("CV Analyzer App")
-    app.setOrganizationName("ATS Team")
+    app.setOrganizationName("CV Magang")
     
     # Create and show main window
     window = MainWindow()

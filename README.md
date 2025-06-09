@@ -8,6 +8,7 @@ Aplikasi ini mengimplementasikan dua algoritma *string matching*, yaitu Knuth-Mo
 # Prasyarat
 1. Python 3 (cara ngecek `python --version`; sudah diuji ke v3.13.3).
 2. `uv` untuk manajemen dependensi (cara ngecek `uv --version`).
+3. **MySQL Server** (cara ngecek `mysql --version`) yang sedang berjalan di `localhost` (cek pake `sudo systemctl status mysql`).
 
 # Cara Menjalankan
 1. Clone repository ini lalu masuk ke direktori `Tubes3_10123004`
@@ -23,13 +24,18 @@ uv venv
 ```bash
 uv pip install -r requirements.txt
 ```
-4. Jalankan program:
+4. Setup databasenya (masukkan password dari root MySQL Server):
+```bash
+sudo python setup_db.py
+```
+
+5. Jalankan program:
 ```bash
 uv run src/main.py
 ```
-5. Enjoy 
+6. Enjoy 
 
 # Pembuat
-- Adiel Rum (10123004)
-- Zulfaqqar Nayaka Athadiansyah (13523094)
 - Farrel Athalla Putra (13523118)
+- Zulfaqqar Nayaka Athadiansyah (13523094)
+- Adiel Rum (10123004)
