@@ -1,2 +1,12 @@
-.venv
-src/*/__pycache__
+.venv/
+venv/
+env/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.vscode/
+.idea/
+.env
