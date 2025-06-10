@@ -8,16 +8,22 @@
 ##########################################################################
 ##########################################################################
 
+from typing import List, Dict
+
 class KMP:
     def __init__(self):
         self.name = "KMP"
+        self._lps_cache: Dict[str, List[int]] = {}
 
     # @brief Menghitung Longest Prefix Suffix array dari pola
     # @param pattern: Pola yang dipakai untuk pattern matching
     # @return: LPS array yang berisi panjang prefix yang juga suffix untuk setiap indeks
-    def _compute_lps(self, pattern: str) -> list[int]:
+    def _compute_lps(self, pattern: str) -> List[int]:
+        if pattern in self._lps_cache:
+            return self._lps_cache[pattern]
+
         m: int = len(pattern)
-        lps: list[int] = [0] * m
+        lps: List[int] = [0] * m
         length: int = 0
         i: int = 1
         
@@ -32,13 +38,14 @@ class KMP:
                 else:
                     lps[i] = 0
                     i += 1
+        self._lps_cache[pattern] = lps
         return lps
     
     # @brief fungsi utama untuk algoritma KMP
     # @param text: Teks yang akan dicari
     # @param pattern: Pola yang akan dicocokkan
     # @return: List posisi di mana pola ditemukan dalam teks, kalau gaada ya kosong
-    def search(self, text: str, pattern: str, is_lowercase: bool = False) -> list[int]:
+    def search(self, text: str, pattern: str, is_lowercase: bool = False) -> List[int]:
         if not text or not pattern:
             return []
             
