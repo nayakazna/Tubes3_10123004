@@ -1,27 +1,24 @@
 class BoyerMoore:
     def __init__(self):
         self.name = "Boyer-Moore"
+        self._pattern_cache = {} # biar gak recompute yg udh ada
     
-    def bad_char_heuristic(self, pattern):
-        """Create bad character heuristic table"""
-        bad_char = {}
-        
+    def _bad_char_heuristic(self, pattern: str) -> list[int]:
+        bad_char = [-1] * 256  # ascii table
         for i in range(len(pattern)):
-            bad_char[pattern[i]] = i
+            bad_char[ord(pattern[i])] = i
             
         return bad_char
     
-    def good_suffix_heuristic(self, pattern):
-        """Create good suffix heuristic table"""
-        m = len(pattern)
-        good_suffix = [0] * m
-        
-        # Helper arrays
-        suffix = [0] * m
+    def _good_suffix_heuristic(self, pattern: str) -> list[int]:
+        m: int = len(pattern)
+        suffix: list[int] = [0] * m
+        good_suffix: list[int] = [m] * m
         
         # Compute suffix array
         suffix[m - 1] = m
-        g = m - 1
+        g: int = m - 1
+        f: int = m - 1
         
         for i in range(m - 2, -1, -1):
             if i > g and suffix[i + m - 1 - f] < i - g:
@@ -33,12 +30,13 @@ class BoyerMoore:
                 while g >= 0 and pattern[g] == pattern[g + m - 1 - f]:
                     g -= 1
                 suffix[i] = f - g
-        
-        # Compute good suffix table
-        for i in range(m):
-            good_suffix[i] = m
+
+        # kasus 1: good suffix pernah muncul
+        for i in range(m-1):
+            good_suffix[m - 1 - suffix[i]] = m - 1 - i
             
-        j = 0
+        # kasus 2: yang pernah muncul cuma prefix dari good suffix sbg suffix pattern
+        j: int = 0
         for i in range(m - 1, -1, -1):
             if suffix[i] == i + 1:
                 while j < m - 1 - i:
@@ -51,36 +49,42 @@ class BoyerMoore:
             
         return good_suffix
     
-    def search(self, text, pattern):
-        """
-        Search for pattern in text using Boyer-Moore algorithm
-        Returns list of starting indices where pattern is found
-        """
+    def _preprocess_pattern(self, pattern: str) -> tuple[list[int], list[int]]:
+        pattern_key = (pattern, len(pattern))
+        
+        if pattern_key in self._pattern_cache:
+            return self._pattern_cache[pattern_key]
+        
+        bad_char = self._bad_char_heuristic(pattern)
+        good_suffix = self._good_suffix_heuristic(pattern)
+        
+        self._pattern_cache[pattern_key] = (bad_char, good_suffix)
+        return bad_char, good_suffix
+
+    def search(self, text: str, pattern: str) -> list[int]:
         if not text or not pattern:
             return []
-            
-        n = len(text)
-        m = len(pattern)
-        
+
+        n: int = len(text)
+        m: int = len(pattern)
+
         if m > n:
             return []
         
         # Convert to lowercase for case-insensitive search
-        text_lower = text.lower()
-        pattern_lower = pattern.lower()
-        
-        # Preprocessing
-        bad_char = self.bad_char_heuristic(pattern_lower)
-        good_suffix = self.good_suffix_heuristic(pattern_lower)
-        
+        text: str = text.lower()
+        pattern: str = pattern.lower()
+
+        bad_char, good_suffix = self._preprocess_pattern(pattern)
+
         positions = []
-        s = 0  # shift of pattern with respect to text
-        
+        s: int = 0  # shift of pattern with respect to text
+
         while s <= n - m:
             j = m - 1
             
             # Keep reducing index j while characters match
-            while j >= 0 and pattern_lower[j] == text_lower[s + j]:
+            while j >= 0 and pattern[j] == text[s + j]:
                 j -= 1
                 
             if j < 0:
@@ -91,14 +95,35 @@ class BoyerMoore:
                 s += good_suffix[0] if s + m < n else 1
             else:
                 # Shift pattern using max of bad char and good suffix
-                bad_char_shift = j - bad_char.get(text_lower[s + j], -1)
+                bad_char_shift = max(1, j - bad_char[ord(text[s + j])])
                 good_suffix_shift = good_suffix[j]
                 s += max(bad_char_shift, good_suffix_shift)
-        
         return positions
+
+def search_first(self, text: str, pattern: str) -> int:
+    n: int = len(text)
+    m: int = len(pattern)
+    if m > n:
+        return -1
     
-    def count_occurrences(self, text, pattern):
-        """Count occurrences of pattern in text"""
+    bad_char, good_suffix = self._preprocess_pattern(pattern)
+
+    s: int = 0
+    while s <= n - m:
+        j: int = m - 1
+        
+        while j >= 0 and pattern[j] == text[s + j]:
+            j -= 1
+            
+        if j < 0:
+            return s  # kemunculan pertama
+            
+        bad_char_shift = max(1, j - bad_char[ord(text[s + j])])
+        good_suffix_shift = good_suffix[j]
+        s += max(bad_char_shift, good_suffix_shift)
+        return -1
+
+    def count_occurrences(self, text: str, pattern: str) -> int:
         return len(self.search(text, pattern))
     
     def search_multiple(self, text, patterns):
@@ -115,3 +140,6 @@ class BoyerMoore:
                     'count': len(positions)
                 }
         return results
+    
+    def clear_cache(self):
+        self._pattern_cache.clear()
