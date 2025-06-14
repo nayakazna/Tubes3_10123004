@@ -2,9 +2,6 @@
 ##########################################################################
 ## @file kmp.py
 ## Ini isinya implementasi algoritma Knuth-Morris-Pratt (KMP)
-## Dioptimize berdasarkan paper ini:
-## https://iopscience.iop.org/article/10.1088/1742-6596/1345/4/042005/pdf
-## NB: aku tambahin docs biar rapi ya rel
 ##########################################################################
 ##########################################################################
 
@@ -58,8 +55,10 @@ class KMP:
         # prep
         text_lower: str = text.lower() if is_lowercase else text
         pattern_lower: str = pattern.lower()
-        lps: list[int] = self._compute_lps(pattern_lower)
         positions: list[int] = []
+
+        # ambil dari cache atau hitung baru
+        lps: List[int] = self._compute_lps(pattern_lower)
 
         i: int = 0  # index untuk teks
         j: int = 0  # index untuk pola
@@ -94,3 +93,9 @@ class KMP:
                     'count': len(positions)
                 }
         return results
+
+    # @brief membersihkan cache LPS
+    # @return: None
+    def clear_cache(self):
+        self._lps_cache.clear()
+    
