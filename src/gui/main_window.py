@@ -64,8 +64,14 @@ class CVCard(QWidget):
         
         # Keywords found
         keywords_text = ""
-        for keyword, count in self.cv_data['keywords_found'].items():
-            keywords_text += f"{keyword}: {count} occurrence(s)\n"
+        for keyword, info in self.cv_data['keywords_found'].items():
+            # If info is a dict (fuzzy), show matched words
+            if isinstance(info, dict) and 'matches' in info:
+                matches = info['matches']
+                matches_str = ', '.join([f"{m['word']} ({m['similarity']:.2f})" for m in matches])
+                keywords_text += f"{keyword}: {len(matches)} fuzzy matches: {matches_str}\n"
+            else:
+                keywords_text += f"{keyword}: {info} occurrence(s)\n"
         
         keywords_label = QLabel(keywords_text.strip())
         keywords_label.setStyleSheet("color: #6c757d;")
@@ -460,10 +466,8 @@ class MainWindow(QMainWindow):
         
         for cv in self.cv_data:
             if self.current_algorithm == "AC":
-                # Aho-Corasick handles multiple patterns efficiently
                 matches = algorithm.search_multiple(cv['text'], keywords, root=ac_root)
             else:
-                # KMP and BM search patterns one by one
                 matches = algorithm.search_multiple(cv['text'], keywords)
             
             if matches:
@@ -490,7 +494,6 @@ class MainWindow(QMainWindow):
         if missing_keywords:
             for cv in self.cv_data:
                 fuzzy_matches = self.levenshtein.fuzzy_search(cv['text'], list(missing_keywords))
-                
                 if fuzzy_matches:
                     fuzzy_count = sum(len(matches) for matches in fuzzy_matches.values())
                     fuzzy_results.append({
@@ -508,7 +511,7 @@ class MainWindow(QMainWindow):
         for result in exact_results:
             cv_result = {
                 'path': result['cv']['path'],
-                'name': result['cv']['name'],  # This now has decrypted name
+                'name': result['cv']['name'],
                 'match_count': result['total_count'],
                 'keywords_found': {k: v['count'] for k, v in result['matches'].items()},
                 'unique_keywords_matched': len(result['matches']),
@@ -528,11 +531,18 @@ class MainWindow(QMainWindow):
         
         for result in fuzzy_results:
             if result['cv']['path'] not in exact_paths:
+                # For each keyword, include the matched words and similarity
+                fuzzy_keywords_found = {}
+                for k, matches in result['fuzzy_matches'].items():
+                    fuzzy_keywords_found[k] = {
+                        'matches': matches,
+                        'count': len(matches)
+                    }
                 cv_result = {
                     'path': result['cv']['path'],
-                    'name': result['cv']['name'],  # This now has decrypted name
+                    'name': result['cv']['name'],
                     'match_count': result['fuzzy_count'],
-                    'keywords_found': {k: f"{len(v)} fuzzy matches" for k, v in result['fuzzy_matches'].items()},
+                    'keywords_found': fuzzy_keywords_found,
                     'unique_keywords_matched': len(result['fuzzy_matches']),
                     'extracted_info': result['cv']['extracted_info'],
                     'text': result['cv']['text'],
