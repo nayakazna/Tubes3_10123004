@@ -446,17 +446,22 @@ class MainWindow(QMainWindow):
         if self.current_algorithm == "KMP":
             algorithm = self.kmp
         elif self.current_algorithm == "BM":
+            for kw in keywords:
+                self.boyer_moore.preprocess_pattern(kw.lower())
             algorithm = self.boyer_moore
         else:  # Aho-Corasick
             algorithm = self.aho_corasick
         
         # Exact match search
         exact_results = []
+
+        if self.current_algorithm == "AC":
+            ac_root = self.aho_corasick.build_automaton(keywords)
         
         for cv in self.cv_data:
             if self.current_algorithm == "AC":
                 # Aho-Corasick handles multiple patterns efficiently
-                matches = algorithm.search_multiple(cv['text'], keywords)
+                matches = algorithm.search_multiple(cv['text'], keywords, root=ac_root)
             else:
                 # KMP and BM search patterns one by one
                 matches = algorithm.search_multiple(cv['text'], keywords)

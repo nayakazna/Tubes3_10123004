@@ -8,42 +8,76 @@
 
 import re
 from collections import defaultdict
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Optional
 
 class LevenshteinDistance:
-    def __init__(self, threshold=0.65):
+    def __init__(self, threshold: int =0.65, cache_limit: int = 1000):
         self.threshold = threshold  # Similarity threshold (0.7 = 70% similar)
-    
+        self._distance_cache = {}  # Cache untuk menghindari perhitungan berulang
+        self.cache_limit = 1000
+        self._word_cleaner =  re.compile(r'[^\w\s]', re.UNICODE)
+        self._whitespace = re.compile(r'\s+')
+        
+    def _evict_cache(self):
+        if len(self._distance_cache) >= self.cache_limit:
+            lru_key = min(self._distance_cache.keys(), key=lambda k: self._distance_cache[k][1])
+            del self._distance_cache[lru_key]
+
     # @brief Menghitung jarak Levenshtein antara dua string.
     # @param s1: String pertama.
     # @param s2: String kedua.
     # @return: Jarak Levenshtein (integer) antara s1 dan s2.
-    def calculate_distance(self, s1, s2):
+    def calculate_distance(self, s1, s2, max_distance: Optional[int] = None):
         if not s1:
             return len(s2)
         if not s2:
             return len(s1)
-        
+        if s1 == s2:
+            return 0
+
         # Convert to lowercase for case-insensitive comparison
         s1 = s1.lower()
         s2 = s2.lower()
         m, n = len(s1), len(s2)
         
+        # cek cache
+        cache_key = (s1, s2, max_distance)
+        if cache_key in self._distance_cache:
+            return self._distance_cache[cache_key]
+
+        # biar efisien, kalau panjang s1 < s2, tukar aja
         if m < n:
-            return self.calculate_distance(s2, s1)  # biar efisien
+            return self.calculate_distance(s2, s1) 
 
         # skrg amanh m >= n
         prev_row = list(range(n + 1))
+        curr_row = [0] * (n + 1)
+        
         for i in range(1, m + 1):
-            curr_row = [i] * (n + 1)
+            curr_row[0] = i
+            diagonal_min = float('inf')
+            
             for j in range(1, n + 1):
-                cost = 0 if s1[i - 1] == s2[j - 1] else 1
-                curr_row[j] = min(
-                    curr_row[j - 1] + 1,  # Insertion
-                    prev_row[j] + 1,      # Deletion
-                    prev_row[j - 1] + cost # Substitution
-                )
-            prev_row = curr_row
+                if s1[i-1] == s2[j-1]:
+                    curr_row[j] = prev_row[j-1]
+                else:
+                    curr_row[j] = 1 + min(
+                        prev_row[j],     # deletion
+                        curr_row[j-1],   # insertion
+                        prev_row[j-1]    # substitution
+                    )
+                
+                diagonal_min = min(diagonal_min, curr_row[j])
+            
+            if max_distance is not None and diagonal_min > max_distance:
+                return max_distance + 1
+            
+            # Swap rows
+            prev_row, curr_row = curr_row, prev_row
+        
+        # Simpan hasil ke cache
+        self._evict_cache()
+        self._distance_cache[cache_key] = prev_row[n]
         return prev_row[n]
     
     # @brief Menghitung persentase kemiripan antara dua string.
@@ -54,8 +88,9 @@ class LevenshteinDistance:
         if not s1 and not s2:
             return 1.0
         
-        distance = self.calculate_distance(s1, s2)
         max_len = max(len(s1), len(s2))
+        max_distance = int(max_len * (1 - self.threshold)) + 1
+        distance = self.calculate_distance(s1, s2, max_distance)
         
         if max_len == 0:
             return 1.0

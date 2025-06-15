@@ -5,7 +5,7 @@
 ##########################################################################
 ##########################################################################
 
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 
 class BoyerMoore:
     def __init__(self):
@@ -65,7 +65,7 @@ class BoyerMoore:
     # @details Mengecek cache dulu, kalau polanya sudah pernah diproses, langsung kembalikan hasilnya biar gak recompute.
     # @param pattern: Pola yang akan diproses
     # @return: Tuple yang isinya tabel bad character dan tabel good suffix
-    def _preprocess_pattern(self, pattern: str) -> tuple[list[int], list[int]]:
+    def preprocess_pattern(self, pattern: str) -> tuple[list[int], list[int]]:
         pattern_key = (pattern, len(pattern))
         
         if pattern_key in self._pattern_cache:
@@ -96,7 +96,7 @@ class BoyerMoore:
         pattern: str = pattern.lower()
 
         # ambil preprocessing atau hitung baru
-        bad_char, good_suffix = self._preprocess_pattern(pattern)
+        bad_char, good_suffix = self.preprocess_pattern(pattern)
 
         positions = []
         s: int = 0  # shift of pattern with respect to text
@@ -131,7 +131,7 @@ class BoyerMoore:
         if m > n:
             return -1
         
-        bad_char, good_suffix = self._preprocess_pattern(pattern)
+        bad_char, good_suffix = self.preprocess_pattern(pattern)
     
         s: int = 0
         while s <= n - m:
@@ -159,14 +159,12 @@ class BoyerMoore:
     # @param text: Teks yang akan dicari
     # @param patterns: List berisi pola-pola yang mau dicari
     # @return: Dictionary yang isinya hasil pencarian, bentuknya pola -> {posisi, jumlah}
-    def search_multiple(self, text, patterns):
-        """
-        Search for multiple patterns in text
-        Returns dictionary with pattern as key and list of positions as value
-        """
+    def search_multiple(self, text: str, patterns: List[str]) -> Dict[str, Dict[str, Any]]:
         results = {}
+        
+        text = text.lower()
+        
         for pattern in patterns:
-            text = text.lower()
             pattern = pattern.lower()
             positions = self.search(text, pattern)
             if positions:
