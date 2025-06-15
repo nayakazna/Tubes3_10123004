@@ -390,7 +390,7 @@ class MainWindow(QMainWindow):
             progress.close()
             
             # Seed database
-            self.seed_database_for_loaded_cvs()
+            # self.seed_database_for_loaded_cvs()
             
             # Load and decrypt data from database for each CV
             self.load_database_info()
