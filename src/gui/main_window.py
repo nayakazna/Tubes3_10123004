@@ -16,7 +16,7 @@ from extractors.pdf_extractor import PDFExtractor
 from extractors.regex_extractor import RegexExtractor
 from database.models import ApplicantModel, ApplicationModel
 from gui.summary_window import SummaryWindow
-
+from utils.seed import Seeder
 
 class CVCard(QWidget):
     def __init__(self, cv_data, parent=None):
@@ -53,8 +53,9 @@ class CVCard(QWidget):
         """)
         
         # Name - Use decrypted name
-        name = self.cv_data.get('name', 'Unknown')
-        name_label = QLabel(f"<b>{name}</b>")
+        fullname = self.cv_data.get('db_first_name', '') + ' ' + self.cv_data.get('db_last_name', '')
+        name = fullname if fullname else "Fulan"
+        name_label = QLabel(f"<b>{fullname}</b>")
         name_label.setFont(QFont("Arial", 12))
         layout.addWidget(name_label)
         
@@ -426,6 +427,14 @@ class MainWindow(QMainWindow):
                     cv['db_address'] = applicant_profile['address']
                     dob = applicant_profile['date_of_birth']
                     cv['db_dob'] = dob.strftime('%Y-%m-%d') if isinstance(dob, datetime) else dob
+                else:
+                    seeder = Seeder()
+                    cv['applicant_id'] = None
+                    cv['db_first_name'] = Seeder.generate_first_name()
+                    cv['db_last_name'] = Seeder.generate_last_name()
+                    cv['db_phone'] = Seeder.generate_phone_number()
+                    cv['db_address'] = Seeder.generate_address()
+                    cv['db_dob'] = Seeder.generate_dob()
         except Exception as e:
             print(f"Error loading applications: {e}")
             QMessageBox.critical(self, "Error", "Failed to load applications from database.")

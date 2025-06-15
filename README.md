@@ -33,11 +33,12 @@ curl -L -o data.zip "https://drive.google.com/uc?export=download&id=181GUZWLDVKU
 unzip data.zip
 rm data.zip
 ```
+> alternatifnya, unduh lewat sini: https://drive.google.com/file/d/181GUZWLDVKUJRv8Jv5UOkM18cw5Ewg2P/view?usp=sharing lalu taruh di folder data, terus extract di situ.
 
 5. Setup databasenya (masukkan password dari root MySQL Server):
 ```bash
 cd ../
-sudo python setup_db.py
+uv run setup_db.py
 ```
 
 6. Jalankan program:
