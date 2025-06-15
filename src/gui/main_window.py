@@ -506,6 +506,7 @@ class MainWindow(QMainWindow):
                 'name': result['cv']['name'],  # This now has decrypted name
                 'match_count': result['total_count'],
                 'keywords_found': {k: v['count'] for k, v in result['matches'].items()},
+                'unique_keywords_matched': len(result['matches']),
                 'extracted_info': result['cv']['extracted_info'],
                 'text': result['cv']['text'],
                 'applicant_id': result['cv'].get('applicant_id'),
@@ -527,6 +528,7 @@ class MainWindow(QMainWindow):
                     'name': result['cv']['name'],  # This now has decrypted name
                     'match_count': result['fuzzy_count'],
                     'keywords_found': {k: f"{len(v)} fuzzy matches" for k, v in result['fuzzy_matches'].items()},
+                    'unique_keywords_matched': len(result['fuzzy_matches']),
                     'extracted_info': result['cv']['extracted_info'],
                     'text': result['cv']['text'],
                     'applicant_id': result['cv'].get('applicant_id'),
@@ -538,8 +540,8 @@ class MainWindow(QMainWindow):
                 }
                 all_results.append(cv_result)
         
-        # Sort by match count
-        all_results.sort(key=lambda x: x['match_count'], reverse=True)
+        # Sort by unique keywords matched, then by match count
+        all_results.sort(key=lambda x: (x['unique_keywords_matched'], x['match_count']), reverse=True)
         
         # Display top N results
         top_n = self.matches_spinner.value()

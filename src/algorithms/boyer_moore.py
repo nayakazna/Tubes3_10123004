@@ -3,6 +3,10 @@ class BoyerMoore:
         self.name = "Boyer-Moore"
         self._pattern_cache = {} # biar gak recompute yg udh ada
     
+
+    # @brief Menghitung tabel 'bad character' untuk pergeseranAdd commentMore actions
+    # @param pattern: Pola string yang akan dianalisis
+    # @return: Tabel (list) yang memetakan setiap karakter ke posisi terakhirnya dalam pola
     def _bad_char_heuristic(self, pattern: str) -> list[int]:
         bad_char = [-1] * 256  # ascii table
         for i in range(len(pattern)):
@@ -10,6 +14,9 @@ class BoyerMoore:
             
         return bad_char
     
+    # @brief Menghitung tabel 'good suffix' untuk pergeseran yang lebih optimalAdd commentMore actions
+    # @param pattern: Pola string yang akan diproses
+    # @return: Tabel (list) yang berisi jarak pergeseran berdasarkan sufiks yang cocok
     def _good_suffix_heuristic(self, pattern: str) -> list[int]:
         m: int = len(pattern)
         suffix: list[int] = [0] * m
@@ -49,6 +56,10 @@ class BoyerMoore:
             
         return good_suffix
     
+    # @brief Melakukan pra-pemrosesan pola dengan menghitung tabel bad char & good suffixAdd commentMore actions
+    # @details Mengecek cache dulu, kalau polanya sudah pernah diproses, langsung kembalikan hasilnya biar gak recompute.
+    # @param pattern: Pola yang akan diproses
+    # @return: Tuple yang isinya tabel bad character dan tabel good suffix
     def _preprocess_pattern(self, pattern: str) -> tuple[list[int], list[int]]:
         pattern_key = (pattern, len(pattern))
         
@@ -61,6 +72,11 @@ class BoyerMoore:
         self._pattern_cache[pattern_key] = (bad_char, good_suffix)
         return bad_char, good_suffix
 
+
+    # @brief fungsi utama untuk algoritma Boyer-Moore
+    # @param text: Teks yang akan dicariAdd commentMore actions
+    # @param pattern: Pola yang akan dicocokkan
+    # @return: List berisi semua posisi awal ditemukannya pola, kalau gaada ya kosong
     def search(self, text: str, pattern: str) -> list[int]:
         if not text or not pattern or len(pattern) > len(text):
             return []
@@ -91,6 +107,10 @@ class BoyerMoore:
                 s += shift1 if shift1 > shift2 else shift2
         return res
 
+    # @brief Mencari kemunculan pertama dari pola dalam teks
+    # @param text: Teks yang akan dicariAdd commentMore actions
+    # @param pattern: Pola yang akan dicocokkan
+    # @return: Posisi awal kemunculan pertama pola, atau -1 kalau gaada
     def search_first(self, text: str, pattern: str) -> int:
         n: int = len(text)
         m: int = len(pattern)
@@ -116,9 +136,17 @@ class BoyerMoore:
             s += max(bad_char_shift, good_suffix_shift)
             return -1
 
+    # @brief Menghitung jumlah kemunculan pola dalam teksAdd commentMore actions
+    # @param text: Teks yang akan dicari
+    # @param pattern: Pola yang akan dicocokkan
+    # @return: Jumlah total kemunculan pola
     def count_occurrences(self, text: str, pattern: str) -> int:
         return len(self.search(text, pattern))
     
+    # @brief Mencari beberapa pola sekaligus dalam satu teks
+    # @param text: Teks yang akan dicariAdd commentMore actions
+    # @param patterns: List berisi pola-pola yang mau dicari
+    # @return: Dictionary yang isinya hasil pencarian, bentuknya pola -> {posisi, jumlah}
     def search_multiple(self, text, patterns):
         """
         Search for multiple patterns in text
