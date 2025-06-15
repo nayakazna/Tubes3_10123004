@@ -13,11 +13,10 @@ class RegexExtractor:
             'education_degree': r'\b(?:Bachelor|Master|PhD|Ph\.D|MBA|B\.S\.|M\.S\.|B\.A\.|M\.A\.|BSc|MSc|BA|MA|BBA|A\.A\.|Associates?|Diploma|Certificate|High School Diploma)\b',
             'years_experience': r'\b\d+\+?\s*(?:years?|yrs?)\s*(?:of\s*)?(?:experience|exp)?\b',
         }
-        self.debug_mode = True # This can be set to False to disable saving debug files
+        self.debug_mode = True 
         self.current_filename = ""
 
     def save_debug(self, step, content):
-        """Save debug information if debug_mode is True."""
         if self.debug_mode:
             debug_dir = "debug_regex_extraction"
             os.makedirs(debug_dir, exist_ok=True)
@@ -33,7 +32,6 @@ class RegexExtractor:
                 print(f"Error saving debug file {filepath}: {e}")
 
     def extract_personal_info(self, text):
-        """Extract personal information from CV text"""
         info = {}
         try:
             text_start = text[:1000]
@@ -72,14 +70,11 @@ class RegexExtractor:
                     elif re.match(r'^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2}$', line):
                         info['name'] = line
                         break
-            # self.save_debug("1_personal_info", f"Personal Info Extracted:\n{json.dumps(info, indent=2)}")
         except Exception as e:
-            # self.save_debug("1_personal_info_error", f"Error in extract_personal_info: {str(e)}")
             print(f"Error in extract_personal_info: {str(e)}")
         return info
 
     def extract_summary(self, text):
-        """Extract summary/objective section"""
         summary = ""
         try:
             summary_patterns = [
@@ -94,17 +89,13 @@ class RegexExtractor:
                     summary_text = match.group(1).strip()
                     summary_text = re.sub(r'\s+', ' ', summary_text)
                     if 20 < len(summary_text) < 1000:
-                        # self.save_debug("2_summary", f"Pattern: {pattern}\n\nExtracted Summary:\n{summary_text}")
                         summary = summary_text[:500]
                         return summary
-            # self.save_debug("2_summary", "No summary found or summary too short/long.")
         except Exception as e:
-            # self.save_debug("2_summary_error", f"Error in extract_summary: {str(e)}")
             print(f"Error in extract_summary: {str(e)}")
         return summary
 
     def extract_skills(self, text):
-        """Extract skills section"""
         skills = []
         try:
             skills_section_patterns = [
@@ -119,7 +110,6 @@ class RegexExtractor:
                 match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
                 if match:
                     skills_text_content = match.group(1).strip()
-                    # self.save_debug("3a_skills_section", f"Pattern: {pattern}\n\nExtracted Section:\n{skills_text_content}")
                     break
             
             temp_skills_list = []
@@ -167,35 +157,48 @@ class RegexExtractor:
                     unique_skills.append(skill_val)
             
             skills = unique_skills
-            # self.save_debug("3b_skills_final", f"Total skills found: {len(skills)}\n\n" + "\n".join(f"- {s}" for s in skills))
         except Exception as e:
-            # self.save_debug("3_skills_error", f"Error in extract_skills: {str(e)}")
             print(f"Error in extract_skills: {str(e)}")
         return skills[:20]
 
     def extract_experience(self, text):
-        """Extract work experience"""
         experience = []
         exp_text = ""
         try:
-            exp_section_pattern = r'\w*(?:Professional Experience|Experience|Work History)\s*\n+(.*?)(?=\n(?:Education|Skills|Certifications|Interests|Additional Information|Professional Affiliations|Languages)|$)*'
-            exp_match = re.search(exp_section_pattern, text, re.IGNORECASE | re.DOTALL)
+            # normalisasi karakter yang goofy ahh
+            text = text.replace('â€“', '-').replace('â€"', '-').replace('\u2013', '-')
             
-            if exp_match:
-                exp_text = exp_match.group(1).strip()
-                # self.save_debug("4a_experience_section", f"Experience Section Found:\n{exp_text}")
-            else:
-                # self.save_debug("4a_experience_section", "No Experience Section Found with primary pattern.")
+            # More flexible experience section detection
+            exp_section_patterns = [    
+                r'Accomplishments\s*\n+(.*?)(?=\n(?:Education|Skills|Certifications|Interests|Additional Information|Professional Affiliations|Languages)|$)',
+                r'Work Experience[s]?\s*\n+(.*?)(?=\n(?:Education|Skills|Certifications|Interests|Additional Information|Professional Affiliations|Languages)|$)',
+                r'Work History\s*\n+(.*?)(?=\n(?:Education|Skills|Certifications|Interests|Additional Information|Professional Affiliations|Languages)|$)',
+                r'Experience\s*\n+(.*?)(?=\n(?:Education|Skills|Certifications|Interests|Additional Information|Professional Affiliations|Languages)|$)',
+                r'Professional Experience[s]?\s*\n+(.*?)(?=\n(?:Education|Skills|Certifications|Interests|Additional Information|Professional Affiliations|Languages)|$)'
+            ]
+            
+            for pattern in exp_section_patterns:
+                exp_match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+                if exp_match:
+                    exp_text = exp_match.group(1).strip()
+                    break
+
+            if not exp_text:
                 return []
 
+            # Improved job patterns
+            pattern_construction_mm_yyyy = r'([A-Za-z\s\/]+?)\s+(\d{1,2}/\d{4})\s+to\s+(\d{1,2}/\d{4}|Current|Present)\s*\n+Company\s*Name\s*[^\w]*([^\n]+)'
             pattern_original_mm_yyyy = r'(\d{1,2}/\d{4})\s+to\s+(\d{1,2}/\d{4}|Current|Present)\s*\n+([^\n]+?)\s+Company\s*Name\s*:\s*([^\n]+)'
-            pattern_original_pos_company_loc = r'([A-Za-z\s,/\-]+?)\s+Company\s*Name\s*:\s*([^\n]+)'
+            pattern_pos_company_loc = r'([A-Za-z\s,/-]+?)\s+Company\s*Name\s*[^\w]*([^\n]+)'
             pattern_accountant_job = r'^(Company Name)\s*\n+([A-Za-z]+\s+\d{4})\s+to\s+([A-Za-z]+\s+\d{4}|Current|Present)\s*\n+([^\n]+?)\s*\n+([^\n]*(?:City|State)[^\n]*)\s*\n+'
+            pattern_bullet_format = r'^([A-Za-z\s]+)\n(\d{1,2}/\d{4})\s*-\s*(\d{1,2}/\d{4}|Present)\n([^\n]+)\n([^\n]+)'
 
             job_patterns = [
+                pattern_construction_mm_yyyy,
+                pattern_bullet_format,
                 pattern_original_mm_yyyy,
                 pattern_accountant_job,
-                pattern_original_pos_company_loc,
+                pattern_pos_company_loc
             ]
 
             all_exp_matches = []
@@ -207,15 +210,20 @@ class RegexExtractor:
                     flags |= re.MULTILINE
                 current_matches = list(re.finditer(pattern_str, exp_text, flags))
                 if current_matches:
-                    # self.save_debug(f"4b_job_matches_pattern_{idx}", f"Found {len(current_matches)} jobs with pattern index {idx}:\n{pattern_str}")
                     all_exp_matches = current_matches
-                    if pattern_str == pattern_original_mm_yyyy: matched_pattern_type = "original_mm_yyyy"
-                    elif pattern_str == pattern_accountant_job: matched_pattern_type = "accountant_month_yyyy"
-                    elif pattern_str == pattern_original_pos_company_loc: matched_pattern_type = "original_pos_company_loc"
+                    if pattern_str == pattern_construction_mm_yyyy: 
+                        matched_pattern_type = "construction_mm_yyyy"
+                    elif pattern_str == pattern_original_mm_yyyy: 
+                        matched_pattern_type = "original_mm_yyyy"
+                    elif pattern_str == pattern_accountant_job: 
+                        matched_pattern_type = "accountant_month_yyyy"
+                    elif pattern_str == pattern_pos_company_loc: 
+                        matched_pattern_type = "pos_company_loc"
+                    elif pattern_str == pattern_bullet_format:
+                        matched_pattern_type = "bullet_format"
                     break 
             
             if all_exp_matches:
-                # self.save_debug("4b_job_matches_summary", f"Processing {len(all_exp_matches)} jobs with pattern type: {matched_pattern_type}")
                 for i, match_obj in enumerate(all_exp_matches):
                     exp_entry = ""
                     company = ""
@@ -224,12 +232,26 @@ class RegexExtractor:
                     end_date = ""
                     location = ""
 
-                    if matched_pattern_type == "original_mm_yyyy":
+                    if matched_pattern_type == "construction_mm_yyyy":
+                        position = match_obj.group(1).strip()
+                        start_date = match_obj.group(2)
+                        end_date = match_obj.group(3)
+                        company = match_obj.group(4).strip() if match_obj.lastindex >= 4 else ""
+                        exp_entry = f"{position} at {company}\n{start_date} - {end_date}"
+                    
+                    elif matched_pattern_type == "bullet_format":
+                        position = match_obj.group(1).strip()
+                        start_date = match_obj.group(2)
+                        end_date = match_obj.group(3)
+                        company = match_obj.group(4).strip()
+                        location = match_obj.group(5).strip()
+                        exp_entry = f"{position} at {company}, {location}\n{start_date} - {end_date}"
+                    
+                    elif matched_pattern_type == "original_mm_yyyy":
                         start_date = match_obj.group(1)
                         end_date = match_obj.group(2)
                         position = match_obj.group(3).strip()
-                        company_or_location = match_obj.group(4).strip() if match_obj.lastindex >= 4 else ""
-                        company = company_or_location 
+                        company = match_obj.group(4).strip() if match_obj.lastindex >= 4 else ""
                         exp_entry = f"{position} at {company}\n{start_date} - {end_date}"
                     
                     elif matched_pattern_type == "accountant_month_yyyy":
@@ -241,7 +263,7 @@ class RegexExtractor:
                         company = location if company_placeholder.lower() == "company name" else company_placeholder
                         exp_entry = f"{position} at {company}\n{start_date} - {end_date}"
 
-                    elif matched_pattern_type == "original_pos_company_loc":
+                    elif matched_pattern_type == "pos_company_loc":
                         position = match_obj.group(1).strip()
                         company = match_obj.group(2).strip() 
                         before_text = exp_text[:match_obj.start()]
@@ -270,41 +292,43 @@ class RegexExtractor:
                             resp_line = resp_line.strip()
                             resp_line = re.sub(r'^[•*-]\s*', '', resp_line)
                             if resp_line and len(resp_line) > 10 and \
-                               not re.match(r'([A-Za-z]+\s+\d{4}|\d{1,2}/\d{4})\s+to', resp_line) and \
-                               not resp_line.lower().startswith("company name"):
+                            not re.match(r'([A-Za-z]+\s+\d{4}|\d{1,2}/\d{4})\s+to', resp_line) and \
+                            not resp_line.lower().startswith("company name"):
                                 responsibilities_list.append(f"• {resp_line}")
                                 if len(responsibilities_list) >= 2:
                                     break
                         if responsibilities_list:
                             exp_entry += "\n" + "\n".join(responsibilities_list)
                         experience.append(exp_entry)
-                    if len(experience) >= 5: break
-            # else:
-                 # self.save_debug("4b_job_matches_summary", "No job matches found with any defined patterns.")
-            # self.save_debug("4c_experience_final", f"Total experience entries: {len(experience)}\n\n" + "\n\n---\n\n".join(experience))
+                    if len(experience) >= 5: 
+                        break
         except Exception as e:
-            # self.save_debug("4_experience_error", f"Error in extract_experience: {str(e)}\n\nStack trace:\n{e.__traceback__}")
             print(f"Error in extract_experience: {str(e)}")
         return experience[:5]
 
     def extract_education(self, text):
-        """Extract education information"""
         education = []
         edu_text = ""
         try:
+            # Normalize special characters
+            text = text.replace('â€“', '-').replace('â€"', '-').replace('\u2013', '-')
+            
+            # More flexible education section detection
             edu_patterns_main = [
                 r'Education(?:\s+and\s+Training)?\s*\n+(.*?)(?=\n(?:Skills|Professional Affiliations|Certifications|Interests|Additional Information|Awards|Languages)|$)',
-                r'Education\s*\n+(.*?)$' 
+                r'Education\s*\n+(.*?)(?=\n(?:Experience|Work History|Employment History)|$)',
+                r'Education\s*\n+(.*?)$'
             ]
             
             for pattern in edu_patterns_main:
                 match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
                 if match:
                     edu_text = match.group(1).strip()
-                    # self.save_debug("5a_education_section", f"Pattern: {pattern}\n\nEducation Section:\n{edu_text}")
                     break
             
             if edu_text:
+                pattern_edu_kentucky = r'^(\d{4})\s*\n+([A-Z]\.[A-Z]\.)\s*:\s*([^\n]+?)\s*(?:1/4|\||-)\s*([^\n]+(?:University|College|Institute|School)[^\n]*)'
+                pattern_edu_certificate = r'Certificate\s*(?:of\s*Completion)?\s*:\s*([^\n]+?)\s*(\d{4})\s*([^\n]+)'
                 pattern_edu_aa_field_year = r'([A-Z]\.[A-Z]\.|Bachelor|Master|MBA|BBA|PhD|Diploma|Certificate)\s*:\s*([^,\n]+?)(?:\s*,\s*(\d{4}))?'
                 pattern_edu_month_year_degree_fieldinst = r'([A-Za-z]+\s+\d{4})\s+([^:]+)\s*:\s*([^\n]+)'
                 pattern_edu_degree_of_field_inst = r'(Bachelor|Master|MBA|BBA|PhD)\s+(?:of\s+)?([^,\n]+?)(?:\s+(?:from|at)\s+)?([A-Z][^\n]*(?:University|College|Institute|School))'
@@ -312,6 +336,8 @@ class RegexExtractor:
                 pattern_edu_accountant = r'^([A-Z][A-Za-z\s.,-]+(?:University|College|Institute|School))\s*\n+(\d{4})\s*\n+([A-Za-z.\s()]+?)\s*:\s*([^,\n]+)'
 
                 degree_patterns_list = [
+                    pattern_edu_kentucky,  # ADDED FIRST TO GIVE IT PRIORITY
+                    pattern_edu_certificate,
                     pattern_edu_aa_field_year,
                     pattern_edu_month_year_degree_fieldinst,
                     pattern_edu_degree_of_field_inst,
@@ -320,32 +346,47 @@ class RegexExtractor:
                 ]
                 
                 for pattern_str in degree_patterns_list:
-                    flags = re.IGNORECASE | re.DOTALL
-                    if pattern_str.startswith('^'):
-                        flags |= re.MULTILINE
+                    flags = re.IGNORECASE | re.DOTALL | re.MULTILINE  # Added MULTILINE flag
                     
                     matches = list(re.finditer(pattern_str, edu_text, flags))
                     
                     if matches:
-                        # self.save_debug("5b_degree_matches", f"Pattern: {pattern_str}\nFound {len(matches)} matches for education")
                         for match_obj in matches:
                             groups = match_obj.groups()
                             edu_entry = ""
-                            year = "" # Initialize year to check if it's found by specific patterns
+                            year = ""
 
-                            if pattern_str == pattern_edu_aa_field_year:
+                            # Handle the Kentucky-specific format
+                            if pattern_str == pattern_edu_kentucky:
+                                year = groups[0]
+                                degree = groups[1]
+                                field = groups[2].strip()
+                                institution = groups[3].strip()
+                                edu_entry = f"{degree} in {field} - {institution} ({year})"
+                            
+                            # Handle certificate format
+                            elif pattern_str == pattern_edu_certificate:
+                                program = groups[0].strip()
+                                year = groups[1]
+                                institution = groups[2].strip()
+                                edu_entry = f"Certificate in {program} - {institution} ({year})"
+                            
+                            elif pattern_str == pattern_edu_aa_field_year:
                                 degree = groups[0]
                                 field = groups[1].strip()
                                 year = groups[2] if len(groups) > 2 and groups[2] else ""
                                 after_text = edu_text[match_obj.end():match_obj.end()+200]
                                 inst_match_edu = re.search(r'([A-Z][^\n:,]+(?:University|College|Institute|School))', after_text)
                                 institution = inst_match_edu.group(1).strip() if inst_match_edu else ""
-                                if institution: edu_entry = f"{degree} in {field} - {institution}"
-                                else: edu_entry = f"{degree} in {field}"
-                                if year: edu_entry += f" ({year})"
-
+                                if institution: 
+                                    edu_entry = f"{degree} in {field} - {institution}"
+                                else: 
+                                    edu_entry = f"{degree} in {field}"
+                                if year: 
+                                    edu_entry += f" ({year})"
+                            
                             elif pattern_str == pattern_edu_month_year_degree_fieldinst:
-                                date = groups[0] # This contains year
+                                date = groups[0]
                                 year = re.search(r'\d{4}', date).group(0) if re.search(r'\d{4}', date) else ""
                                 degree_text = groups[1].strip()
                                 field_and_inst = groups[2].strip()
@@ -362,19 +403,21 @@ class RegexExtractor:
                                 field = groups[1].strip()
                                 institution = groups[2].strip() if len(groups) > 2 and groups[2] else ""
                                 edu_entry = f"{degree} in {field}"
-                                if institution: edu_entry += f" - {institution}"
+                                if institution: 
+                                    edu_entry += f" - {institution}"
                                 context_around_match = edu_text[max(0, match_obj.start()-50) : min(len(edu_text), match_obj.end()+50)]
                                 year_match_edu = re.search(r'\b((?:19|20)\d{2})\b', context_around_match)
-                                if year_match_edu and not year in edu_entry :
+                                if year_match_edu and not year in edu_entry:
                                     edu_entry += f" ({year_match_edu.group(1)})"
-                                    year = year_match_edu.group(1) # Store found year
+                                    year = year_match_edu.group(1)
                             
                             elif pattern_str == pattern_edu_consumer_advocate:
                                 description = groups[0].strip()
                                 institution = groups[1].strip()
                                 location = groups[2].strip() if len(groups) > 2 and groups[2] else ""
                                 edu_entry = f"{description} - {institution}"
-                                if location: edu_entry += f" ({location})"
+                                if location: 
+                                    edu_entry += f" ({location})"
                             
                             elif pattern_str == pattern_edu_accountant:
                                 institution = groups[0].strip()
@@ -382,38 +425,23 @@ class RegexExtractor:
                                 degree = groups[2].strip()
                                 field = groups[3].strip()
                                 edu_entry = f"{degree} in {field} - {institution} ({year})"
-
                             if edu_entry and edu_entry not in education:
                                 education.append(edu_entry)
-                            if len(education) >= 3: break
-                        if education: break
-                
-                if not education:
-                    # self.save_debug("5b_degree_matches", "No matches with primary patterns, trying fallback.")
-                    degree_keyword_matches = list(re.finditer(self.patterns['education_degree'], edu_text, re.IGNORECASE))
-                    for dk_match in degree_keyword_matches:
-                        start_context = max(0, dk_match.start() - 70)
-                        end_context = min(len(edu_text), dk_match.end() + 100)
-                        context = edu_text[start_context:end_context].strip()
-                        context = re.sub(r'\s+', ' ', context)
-                        context_lines = context.split('\n')
-                        best_context_line = ""
-                        for c_line in context_lines:
-                            if dk_match.group(0) in c_line:
-                                best_context_line = c_line.strip()
+                            if len(education) >= 3: 
                                 break
-                        if not best_context_line: best_context_line = context
-                        if best_context_line and best_context_line not in education:
-                            education.append(best_context_line)
-                            if len(education) >= 3: break
-            # self.save_debug("5c_education_final", f"Total education entries: {len(education)}\n\n" + "\n".join(f"- {e}" for e in education))
+                        if education: 
+                            break
+                
+                # Fallback for very unusual formats
+                if not education:
+                    edu_lines = [line.strip() for line in edu_text.split('\n') if line.strip()]
+                    if len(edu_lines) >= 2:
+                        education.append("\n".join(edu_lines[:3]))
         except Exception as e:
-            # self.save_debug("5_education_error", f"Error in extract_education: {str(e)}")
             print(f"Error in extract_education: {str(e)}")
         return education[:3]
 
     def extract_all(self, text):
-        """Extract all information from CV text"""
         try:
             if hasattr(self, '_current_cv_path_for_debug'):
                 self.current_filename = os.path.basename(self._current_cv_path_for_debug).replace('.pdf', '')
@@ -424,11 +452,9 @@ class RegexExtractor:
                 potential_name = "".join(c for c in first_line if c.isalnum() or c == ' ')[:30].replace(" ","_")
                 self.current_filename = potential_name if potential_name else "unknown_cv"
 
-            # self.save_debug("0_original_text", f"Text length: {len(text)}\nLine count: {len(text.split(chr(10)))}\n\n{text}")
             
             if len(text) > 70000:
                 text = text[:70000]
-                # self.save_debug("0_text_truncated", "Text was truncated to 70000 characters")
             
             result = {
                 'personal_info': self.extract_personal_info(text),
@@ -438,13 +464,11 @@ class RegexExtractor:
                 'education': self.extract_education(text)
             }
             
-            # self.save_debug("6_final_result", json.dumps(result, indent=2))
             return result
             
         except Exception as e:
             error_msg = f"Error in extract_all: {str(e)}"
-            # self.save_debug("error_extract_all", error_msg)
-            print(f"Error in extract_all: {str(e)}") # Also print to console
+            print(f"Error in extract_all: {str(e)}")
             return {
                 'personal_info': {}, 'summary': '', 'skills': [],
                 'experience': [], 'education': []

@@ -95,12 +95,10 @@ class CVCard(QWidget):
         self.setMaximumHeight(200)
     
     def show_summary(self):
-        """Show CV summary window"""
         summary_window = SummaryWindow(self.cv_data, self)
         summary_window.show()
     
     def view_cv(self):
-        """Open CV file"""
         try:
             if sys.platform == "win32":
                 os.startfile(self.cv_data['path'])
@@ -273,11 +271,9 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_layout)
         
     def set_algorithm(self, algorithm):
-        """Set the current search algorithm"""
         self.current_algorithm = algorithm
         
     def seed_database_for_loaded_cvs(self):
-        """Seed database with manual data for each loaded CV"""
         try:
             applicant_model = ApplicantModel()
             application_model = ApplicationModel()
@@ -339,7 +335,6 @@ class MainWindow(QMainWindow):
             print(f"Error seeding database: {e}")
     
     def load_cv_data(self):
-        """Load CV data from the data folder with progress dialog"""
         base_dir = os.path.dirname(__file__)
         data_path = os.path.join(base_dir, "..", "..", "data", "data")
         data_path = os.path.abspath(data_path)
@@ -409,7 +404,6 @@ class MainWindow(QMainWindow):
         self.loader_thread.start()
     
     def load_database_info(self):
-        """Load and decrypt information from database for all CVs"""
         print("\n=== Memuat Info dari Database ===") 
         app_model = ApplicationModel()
         try:
@@ -443,7 +437,6 @@ class MainWindow(QMainWindow):
             app_model.close()
     
     def search_cvs(self):
-        """Perform CV search based on keywords"""
         keywords_text = self.keywords_input.text().strip()
         
         if not keywords_text:

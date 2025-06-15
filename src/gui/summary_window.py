@@ -45,7 +45,7 @@ class SummaryWindow(QDialog):
         header_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(header_label)
         
-        # Scroll area for content
+        # Scroll area
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         
@@ -57,17 +57,15 @@ class SummaryWindow(QDialog):
         personal_layout = QVBoxLayout()
         
         personal_info = self.extracted_info.get('personal_info', {})
-        
-        # Name - prefer database name over extracted
+        # Name
         if 'db_first_name' in self.cv_data and 'db_last_name' in self.cv_data:
             name = f"{self.cv_data['db_first_name']} {self.cv_data['db_last_name']}"
         else:
             name = personal_info.get('name', self.cv_data.get('name', 'Not found'))
-        # print("SummaryWindow cv_data:", self.cv_data)
         name_label = QLabel(f"<b>Name:</b> {name}")
         personal_layout.addWidget(name_label)
         
-        # Phone - prefer database phone
+        # Phone
         if 'db_phone' in self.cv_data:
             phone = self.cv_data['db_phone']
         else:
@@ -108,7 +106,7 @@ class SummaryWindow(QDialog):
             row_layout = QHBoxLayout()
             row_layout.setSpacing(5)
             
-            for i, skill in enumerate(skills[:15]):  # Limit to 15 skills
+            for i, skill in enumerate(skills[:15]):  # batesin ke 15
                 skill_label = QLabel(skill)
                 skill_label.setStyleSheet("""
                     background-color: #e9ecef;
@@ -118,7 +116,7 @@ class SummaryWindow(QDialog):
                 """)
                 row_layout.addWidget(skill_label)
                 
-                # Create new row after every 5 skills
+                # bikin baris baru setiap 5 skill
                 if (i + 1) % 5 == 0:
                     row_widget.setLayout(row_layout)
                     skills_layout.addWidget(row_widget)
@@ -126,7 +124,7 @@ class SummaryWindow(QDialog):
                     row_layout = QHBoxLayout()
                     row_layout.setSpacing(5)
             
-            # Add remaining skills
+            # sisanya
             if row_layout.count() > 0:
                 row_layout.addStretch()
                 row_widget.setLayout(row_layout)
@@ -141,7 +139,7 @@ class SummaryWindow(QDialog):
         
         experience = self.extracted_info.get('experience', [])
         if experience:
-            for i, job in enumerate(experience[:5]):  # Limit to 5 jobs
+            for i, job in enumerate(experience[:5]):  # batesin ke 5 jobs
                 job_label = QLabel(f"• {job}")
                 job_label.setWordWrap(True)
                 job_label.setStyleSheet("padding: 5px;")
@@ -172,20 +170,6 @@ class SummaryWindow(QDialog):
         
         edu_group.setLayout(edu_layout)
         content_layout.addWidget(edu_group)
-        
-        # Summary
-        # summary = self.extracted_info.get('summary', '')
-        # if summary:
-        #     summary_group = QGroupBox("Professional Summary")
-        #     summary_layout = QVBoxLayout()
-            
-        #     summary_label = QLabel(summary)
-        #     summary_label.setWordWrap(True)
-        #     summary_label.setStyleSheet("padding: 10px; line-height: 1.5;")
-        #     summary_layout.addWidget(summary_label)
-            
-        #     summary_group.setLayout(summary_layout)
-        #     content_layout.addWidget(summary_group)
         
         content_layout.addStretch()
         content_widget.setLayout(content_layout)
