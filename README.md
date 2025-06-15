@@ -2,7 +2,7 @@
 Tugas Besar 3 IF2211 Strategi Algoritma 2025
 
 # Deskripsi
-Repositori ini berisi implementasi dari Tugas Besar 3 IF2211 Strategi Algoritma 2025, yakni "Pemanfaatan Pattern Matching untuk Membangun Sistem ATS (Applicant Tracking System) Berbasis CV Digital", yang berupa aplikasi GUI. Aplikasi ini dibuat dengan bahasa Python dan kakas GUI PyQT. 
+Repositori ini berisi implementasi dari Tugas Besar 3 IF2211 Strategi Algoritma 2025, yakni "Pemanfaatan Pattern Matching untuk Membangun Sistem ATS (Applicant Tracking System) Berbasis CV Digital" berupa aplikasi GUI. Aplikasi ini dibuat dengan bahasa Python dan kakas GUI PyQT dengan *source code* yang terdokumentasi dengan format Doxygen. 
 Aplikasi ini mengimplementasikan dua algoritma *string matching*, yaitu Knuth-Morris-Pratt (KMP) dan Boyer-Moore (BM). Algoritma KMP melakukan pencocokan dari kiri ke kanan dan memanfaatkan *preprocessing* pada pola untuk membangun tabel LPS (Longest Prefix Suffix). Tabel ini digunakan untuk menghindari perbandingan karakter yang tidak perlu saat terjadi ketidakcocokan, sehingga pergeseran bisa lebih efisien. Sementara itu, algoritma BM mencocokkan pola dari kanan ke kiri. BM menggunakan dua heuristik yaitu Bad Character dan Good Suffix untuk menentukan jumlah pergeseran. Pendekatan ini sering kali menghasilkan lompatan yang sangat besar sehingga bisa cepat kalau menghandle pola yang panjang dan teks yang banyak.
 
 # Prasyarat
@@ -24,16 +24,27 @@ uv venv
 ```bash
 uv pip install -r requirements.txt
 ```
-4. Setup databasenya (masukkan password dari root MySQL Server):
+
+4. Unduh file CV yang diperlukan:
 ```bash
+mkdir data
+cd data
+curl -L -o data.zip "https://drive.google.com/uc?export=download&id=181GUZWLDVKUJRv8Jv5UOkM18cw5Ewg2P"
+unzip data.zip
+rm data.zip
+```
+
+5. Setup databasenya (masukkan password dari root MySQL Server):
+```bash
+cd ../
 sudo python setup_db.py
 ```
 
-5. Jalankan program:
+6. Jalankan program:
 ```bash
 uv run src/main.py
 ```
-6. Enjoy 
+7. Enjoy 
 
 # Pembuat
 - Farrel Athalla Putra (13523118)
