@@ -1,8 +1,12 @@
 from collections import deque, defaultdict
+from typing import List, Dict, Tuple, Any
 
+    ## @class Node
+    ## @brief Representasi sebuah node dalam automaton Aho-Corasick.
 class AhoCorasick:
     def __init__(self):
         self.name = "Aho-Corasick"
+        self._automaton_cache: Dict[Tuple[str, ...], Any] = {}
         
     class Node:
         def __init__(self):
@@ -10,11 +14,17 @@ class AhoCorasick:
             self.failure = None
             self.output = []
             
+    # @brief Membangun automaton Aho-Corasick dari sekumpulan pola.
+    # @param patterns: List pola (string) yang akan dimasukkan ke dalam automaton.
+    # @return: Root node dari automaton yang telah dibangun.
     def build_automaton(self, patterns):
-        """Build Aho-Corasick automaton from patterns"""
+        patterns_tuple = tuple(sorted(p.lower() for p in patterns))
+        if patterns_tuple in self._automaton_cache:
+            return self._automaton_cache[patterns_tuple] 
+        
         root = self.Node()
         
-        # Build trie
+        # Membangun trie
         for i, pattern in enumerate(patterns):
             node = root
             pattern_lower = pattern.lower()
@@ -25,23 +35,23 @@ class AhoCorasick:
                 node = node.children[char]
             
             node.output.append((i, pattern))
-        
-        # Build failure links using BFS
+
+        # Membangun failure links menggunakan BFS
         queue = deque()
-        
-        # Initialize failure links for root's children
+
+        # Inisialisasi failure links untuk anak-anak root
         for char, child in root.children.items():
             child.failure = root
             queue.append(child)
-        
-        # BFS to build failure links
+
+        # BFS untuk membangun failure links
         while queue:
             current = queue.popleft()
             
             for char, child in current.children.items():
                 queue.append(child)
                 
-                # Find failure link
+                # Cari failure link untuk child
                 failure = current.failure
                 while failure and char not in failure.children:
                     failure = failure.failure
@@ -51,30 +61,31 @@ class AhoCorasick:
                 else:
                     child.failure = root
                 
-                # Merge output from failure link
+                # Gabungin output dari failure link ke child
                 if child.failure:
                     child.output.extend(child.failure.output)
         
+        # Simpan ke cache
+        self._automaton_cache[patterns_tuple] = root
         return root
     
+    # @brief Mencari satu pola dalam teks (untuk kompatibilitas dengan algoritma lain).
+    # @param text: Teks yang akan dicari.
+    # @param pattern: Pola tunggal yang akan dicocokkan.
+    # @return: List berisi posisi di mana pola ditemukan.
     def search(self, text, pattern):
-        """
-        Search for single pattern in text (for compatibility with other algorithms)
-        """
         results = self.search_multiple(text, [pattern])
         if pattern in results:
             return results[pattern]['positions']
         return []
     
+    # @brief Fungsi utama untuk mencari beberapa pola sekaligus secara efisien.
+    # @param text: Teks yang akan dicari.
+    # @param patterns: List pola yang akan dicocokkan.
+    # @return: Dictionary yang isinya <pola, <'positions', 'count'>>. Kalau kosong ya kosong.
     def search_multiple(self, text, patterns):
-        """
-        Search for multiple patterns in text using Aho-Corasick
-        Returns dictionary with pattern as key and list of positions as value
-        """
         if not text or not patterns:
-            return {}
-        
-        # Build automaton
+            return {}        
         root = self.build_automaton(patterns)
         
         # Search in text
@@ -101,13 +112,16 @@ class AhoCorasick:
         # Convert defaultdict to regular dict and filter empty results
         return {k: v for k, v in results.items() if v['positions']}
     
+    # @brief Menghitung jumlah kemunculan sebuah pola dalam teks.
+    # @param text: Teks yang akan dicari.
+    # @param pattern: Pola yang akan dihitung.
+    # @return: Jumlah kemunculan pola (integer).
     def count_occurrences(self, text, pattern):
-        """Count occurrences of pattern in text"""
         return len(self.search(text, pattern))
     
+    # @brief Alias untuk search_multiple untuk menekankan keunggulan Aho-Corasick.
+    # @param text: Teks yang akan dicari.
+    # @param patterns: List pola yang akan dicocokkan.
+    # @return: Hasil dari search_multiple.
     def search_all_patterns(self, text, patterns):
-        """
-        Efficiently search for all patterns simultaneously
-        This is the main advantage of Aho-Corasick over KMP/BM
-        """
         return self.search_multiple(text, patterns)
