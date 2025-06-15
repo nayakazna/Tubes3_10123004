@@ -409,27 +409,29 @@ class MainWindow(QMainWindow):
     
     def load_database_info(self):
         """Load and decrypt information from database for all CVs"""
-        applicant_model = ApplicantModel()
-        
-        for cv in self.cv_data:
-            if 'applicant_id' in cv:
-                # Get decrypted applicant data
-                applicant = applicant_model.get_applicant(cv['applicant_id'])
-                if applicant:
-                    # Store decrypted data
-                    cv['db_first_name'] = applicant.get('first_name', '')
-                    cv['db_last_name'] = applicant.get('last_name', '')
-                    cv['db_phone'] = applicant.get('phone_number', '')
-                    cv['db_address'] = applicant.get('address', '')
-                    
-                    # Format DOB
-                    dob = applicant.get('date_of_birth')
-                    cv['db_dob'] = dob.strftime('%Y-%m-%d') if dob else "Not found"
-                    
-                    # Update name with decrypted data
-                    cv['name'] = f"{cv['db_first_name']} {cv['db_last_name']}".strip()
-        
-        applicant_model.close()
+        print("\n=== Memuat Info dari Database ===") 
+        app_model = ApplicationModel()
+        try:
+            all_applications = app_model.get_all_applications_with_applicants()
+            path_to_profile_map = {app['cv_path']: app for app in all_applications}
+            for cv in self.cv_data:
+                relative_path = os.path.join('data', cv['category'], cv['filename'])
+                normalized_path = relative_path.replace('\\', '/')
+                applicant_profile = path_to_profile_map.get(normalized_path)
+                if applicant_profile:
+                    cv['applicant_id'] = applicant_profile['applicant_id']
+                    cv['db_first_name'] = applicant_profile['first_name']
+                    cv['db_last_name'] = applicant_profile['last_name']
+                    cv['db_phone'] = applicant_profile['phone_number']
+                    cv['db_address'] = applicant_profile['address']
+                    dob = applicant_profile['date_of_birth']
+                    cv['db_dob'] = dob.strftime('%Y-%m-%d') if isinstance(dob, datetime) else dob
+        except Exception as e:
+            print(f"Error loading applications: {e}")
+            QMessageBox.critical(self, "Error", "Failed to load applications from database.")
+            return
+        finally:
+            app_model.close()
     
     def search_cvs(self):
         """Perform CV search based on keywords"""
