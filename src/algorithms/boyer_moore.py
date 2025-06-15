@@ -91,7 +91,7 @@ class BoyerMoore:
             return []
         text_l = text.lower()
         pat_l  = pattern.lower()
-        bad, good = self._preprocess_pattern(pat_l)
+        bad, good = self.preprocess_pattern(pat_l)
 
         n, m = len(text_l), len(pat_l)
         res = []

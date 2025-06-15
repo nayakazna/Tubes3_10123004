@@ -12,7 +12,7 @@ class KMP:
         self.name = "KMP"
         self._lps_cache: Dict[str, List[int]] = {}
         self._cache_limit = cache_limit
-        self._cache_access_count = Dict[str, int]()
+        self._cache_access_count = {}
 
     def _evict_cache(self) -> None:
         if len(self._lps_cache) >= self._cache_limit:

@@ -17,6 +17,7 @@ class LevenshteinDistance:
         self.cache_limit = 1000
         self._word_cleaner =  re.compile(r'[^\w\s]', re.UNICODE)
         self._whitespace = re.compile(r'\s+')
+        self._access_counter = 0 
         
     def _evict_cache(self):
         if len(self._distance_cache) >= self.cache_limit:
@@ -43,7 +44,10 @@ class LevenshteinDistance:
         # cek cache
         cache_key = (s1, s2, max_distance)
         if cache_key in self._distance_cache:
-            return self._distance_cache[cache_key]
+            self._access_counter += 1
+            value, _ = self._distance_cache[cache_key]
+            self._distance_cache[cache_key] = (value, self._access_counter)
+            return value
 
         # biar efisien, kalau panjang s1 < s2, tukar aja
         if m < n:
@@ -77,7 +81,8 @@ class LevenshteinDistance:
         
         # Simpan hasil ke cache
         self._evict_cache()
-        self._distance_cache[cache_key] = prev_row[n]
+        self._access_counter += 1
+        self._distance_cache[cache_key] = (prev_row[n], self._access_counter)
         return prev_row[n]
     
     # @brief Menghitung persentase kemiripan antara dua string.
