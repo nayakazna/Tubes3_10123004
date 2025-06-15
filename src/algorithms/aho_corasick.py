@@ -1,8 +1,6 @@
 from collections import deque, defaultdict
 from typing import List, Dict, Tuple, Any
 
-    ## @class Node
-    ## @brief Representasi sebuah node dalam automaton Aho-Corasick.
 class AhoCorasick:
     def __init__(self):
         self.name = "Aho-Corasick"
